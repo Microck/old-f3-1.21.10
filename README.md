@@ -1,7 +1,7 @@
 # old f3
 
 <p align="center">
-  <img src="docs/images/classic-debug-hud-logo.png" alt="old f3 logo" width="180">
+  <img src="docs/images/old-f3-logo.png" alt="old f3 logo" width="180">
 </p>
 
 <p align="center">
@@ -11,14 +11,14 @@
 
 ---
 
-`old f3` restores the dense pre-1.21.9 Minecraft debug screen layout for
-Minecraft `1.21.10` on Fabric. press `F3` and the debug overlay stays focused
-on the classic information layout instead of the newer customization surface.
+`old f3` restores the pre-1.21.9 style F3 debug overlay for Minecraft `1.21.10`
+on Fabric. press `F3` as usual to get the classic information layout instead of
+the newer customization surface.
 
 ## why
 
 the newer debug screen is cleaner, but it is less useful if you are used to the
-old dense layout. this mod keeps coordinates, chunk data, frame and tick
+pre-1.21.9 layout. this mod keeps coordinates, chunk data, frame and tick
 information, targeted block details, and runtime stats in one familiar overlay.
 
 if you are searching for an old F3 screen mod, classic F3 debug HUD, Minecraft

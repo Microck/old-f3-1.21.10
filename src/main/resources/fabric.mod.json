@@ -3,7 +3,7 @@
   "id": "oldf3",
   "version": "${version}",
   "name": "old f3",
-  "description": "Restores the classic pre-1.21.9 debug screen for Minecraft 1.21.10.",
+  "description": "Restores the pre-1.21.9 style F3 debug overlay for Minecraft 1.21.10 on Fabric.",
   "authors": [
     "Microck"
   ],
