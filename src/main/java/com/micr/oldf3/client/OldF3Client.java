@@ -7,6 +7,6 @@ import net.fabricmc.api.Environment;
 @Environment(value=EnvType.CLIENT)
 public class OldF3Client implements ClientModInitializer {
     public void onInitializeClient() {
+        OldF3Config.load();
     }
 }
-

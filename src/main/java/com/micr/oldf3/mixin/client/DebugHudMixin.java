@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.micr.oldf3.client.OldF3Config;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -119,6 +120,12 @@ public abstract class DebugHudMixin {
     private long allocRate = 0L;
     @Unique
     private static final Map<Heightmap.Type, String> HEIGHTMAP_NAMES = Maps.newEnumMap(Map.of(Heightmap.Type.WORLD_SURFACE_WG, "SW", Heightmap.Type.WORLD_SURFACE, "S", Heightmap.Type.OCEAN_FLOOR_WG, "OW", Heightmap.Type.OCEAN_FLOOR, "O", Heightmap.Type.MOTION_BLOCKING, "M", Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, "ML"));
+    @Unique
+    private static final int DEBUG_TEXT_COLOR = 0xE0E0E0;
+    @Unique
+    private static final int DEBUG_TEXT_BACKGROUND_COLOR = -1873784752;
+    @Unique
+    private static final int DEBUG_TEXT_LINE_HEIGHT = 9;
 
     @Shadow
     public abstract boolean shouldShowDebugHud();
@@ -186,10 +193,48 @@ public abstract class DebugHudMixin {
         }
         List<String> leftText = this.getLeftText();
         List<String> rightText = this.getRightText();
-        this.drawText(context, leftText, true);
-        this.drawText(context, rightText, false);
+        this.drawDebugText(context, leftText, rightText);
         this.renderCharts(context);
         ci.cancel();
+    }
+
+    @Unique
+    private void drawDebugText(DrawContext context, List<String> leftText, List<String> rightText) {
+        int configuredGuiScale = OldF3Config.getDebugGuiScale();
+        int windowGuiScale = this.client.getWindow().getScaleFactor();
+        if (configuredGuiScale <= 0 || configuredGuiScale == windowGuiScale) {
+            this.drawText(context, leftText, true);
+            this.drawText(context, rightText, false);
+            return;
+        }
+
+        float textScale = (float)configuredGuiScale / (float)windowGuiScale;
+        int layoutWidth = Math.max(1, Math.round((float)this.client.getWindow().getScaledWidth() / textScale));
+        context.getMatrices().pushMatrix();
+        try {
+            context.getMatrices().scale(textScale, textScale);
+            this.drawScaledText(context, leftText, true, layoutWidth);
+            this.drawScaledText(context, rightText, false, layoutWidth);
+        }
+        finally {
+            context.getMatrices().popMatrix();
+        }
+    }
+
+    @Unique
+    private void drawScaledText(DrawContext context, List<String> lines, boolean leftSide, int layoutWidth) {
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line == null || line.isEmpty()) {
+                continue;
+            }
+
+            int textWidth = this.textRenderer.getWidth(line);
+            int x = leftSide ? 2 : layoutWidth - textWidth - 2;
+            int y = 2 + DEBUG_TEXT_LINE_HEIGHT * i;
+            context.fill(x - 1, y - 1, x + textWidth + 1, y + DEBUG_TEXT_LINE_HEIGHT, DEBUG_TEXT_BACKGROUND_COLOR);
+            context.drawText(this.textRenderer, line, x, y, DEBUG_TEXT_COLOR, false);
+        }
     }
 
     @Unique

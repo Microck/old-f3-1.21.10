@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "oldf3",
   "version": "${version}",
-  "name": "old f3",
+  "name": "Old F3",
   "description": "Restores the pre-1.21.9 style F3 debug overlay for Minecraft 1.21.10 on Fabric.",
   "authors": [
     "Microck"

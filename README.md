@@ -47,6 +47,15 @@ mod for that workflow.
 - blocks the newer `F3 + F6` debug customization screen
 - keeps the debug chart shortcuts visible in the overlay text
 - omits one local difficulty line on `1.21.10` for stability
+- follows Minecraft's GUI scale by default
+
+## config
+
+on first launch, the mod creates `config/oldf3.properties`.
+
+set `debug_gui_scale=0` to follow Minecraft's GUI scale. set it to `1` through
+`8` to render the old F3 text at a separate scale. restart the game after
+editing the file.
 
 ## build
 
