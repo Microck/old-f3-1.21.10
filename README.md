@@ -25,7 +25,7 @@ mod for that workflow.
 
 ## quickstart
 
-1. download the latest jar from the [releases](https://github.com/Microck/old-f3-1.21.10/releases).
+1. download the latest jar from the [releases](https://github.com/Microck/old-f3/releases).
 2. place it in your `.minecraft/mods` folder.
 3. launch Minecraft `1.21.10` with Fabric.
 4. press `F3`.
