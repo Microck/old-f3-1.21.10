@@ -1,5 +1,3 @@
-# old f3
-
 <p align="center">
   <img src="docs/images/old-f3-logo.png" alt="old f3 logo" width="180">
 </p>
