@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "oldf3",
+  "version": "${version}",
+  "name": "old f3",
+  "description": "Restores the classic pre-1.21.9 debug screen for Minecraft 1.21.10.",
+  "authors": [
+    "Microck"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Microck/old-f3-1.21.10",
+    "sources": "https://github.com/Microck/old-f3-1.21.10"
+  },
+  "license": "All-Rights-Reserved",
+  "icon": "assets/oldf3/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-datagen": [
+      "com.micr.oldf3.client.OldF3DataGenerator"
+    ],
+    "client": [
+      "com.micr.oldf3.client.OldF3Client"
+    ],
+    "main": [
+      "com.micr.oldf3.OldF3"
+    ]
+  },
+  "mixins": [
+    "oldf3.mixins.json",
+    {
+      "config": "oldf3.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.3",
+    "fabric-api": "*",
+    "minecraft": "1.21.10",
+    "java": ">=21"
+  }
+}

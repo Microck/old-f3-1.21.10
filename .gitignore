@@ -1,4 +1,5 @@
 .agent-tmp/
+.gradle/
 build/
 .residue/
 

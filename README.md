@@ -1,7 +1,7 @@
-# classic debug hud
+# old f3
 
 <p align="center">
-  <img src="docs/images/classic-debug-hud-logo.png" alt="classic debug hud logo" width="180">
+  <img src="docs/images/classic-debug-hud-logo.png" alt="old f3 logo" width="180">
 </p>
 
 <p align="center">
@@ -11,9 +11,9 @@
 
 ---
 
-`classic debug hud` restores the dense pre-1.21.9 debug screen layout for
-Minecraft `1.21.10`. press `F3` and the debug overlay stays focused on the
-classic information layout instead of the newer customization surface.
+`old f3` restores the dense pre-1.21.9 Minecraft debug screen layout for
+Minecraft `1.21.10` on Fabric. press `F3` and the debug overlay stays focused
+on the classic information layout instead of the newer customization surface.
 
 ## why
 
@@ -21,9 +21,13 @@ the newer debug screen is cleaner, but it is less useful if you are used to the
 old dense layout. this mod keeps coordinates, chunk data, frame and tick
 information, targeted block details, and runtime stats in one familiar overlay.
 
+if you are searching for an old F3 screen mod, classic F3 debug HUD, Minecraft
+1.21.10 F3 overlay, or Fabric debug screen restore, this is the small client-side
+mod for that workflow.
+
 ## quickstart
 
-1. download the latest jar from the [releases](https://github.com/Microck/classic-debug-hud-1.21.10/releases).
+1. download the latest jar from the [releases](https://github.com/Microck/old-f3-1.21.10/releases).
 2. place it in your `.minecraft/mods` folder.
 3. launch Minecraft `1.21.10` with Fabric.
 4. press `F3`.
@@ -46,4 +50,10 @@ information, targeted block details, and runtime stats in one familiar overlay.
 
 ## build
 
-this repository publishes tested release jars for Minecraft `1.21.10`.
+build from source with the Gradle wrapper:
+
+```bash
+./gradlew build
+```
+
+the built mod jar is written to `build/libs/`.
