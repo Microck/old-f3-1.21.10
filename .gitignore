@@ -1,0 +1,6 @@
+.agent-tmp/
+build/
+.residue/
+
+# release artifacts
+dist/
