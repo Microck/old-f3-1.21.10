@@ -1,10 +1,13 @@
 plugins {
     id 'fabric-loom' version "${loom_version}"
+    id 'com.modrinth.minotaur' version '2.9.0'
     id 'maven-publish'
 }
 
 version = project.mod_version
 group = project.maven_group
+
+def releaseVersion = project.mod_version.toString().replace('+', '-')
 
 base {
     archivesName = project.archives_base_name
@@ -57,5 +60,25 @@ jar {
 
     from('LICENSE') {
         rename { "${it}_${inputs.properties.archivesName}" }
+    }
+}
+
+remapJar {
+    archiveFileName = "${project.archives_base_name}-v${releaseVersion}.jar"
+}
+
+modrinth {
+    token = System.getenv('MODRINTH_TOKEN')
+    projectId = System.getenv('MODRINTH_PROJECT_ID') ?: 'old-f3'
+    versionNumber = releaseVersion
+    versionName = "Old F3 ${project.mod_version.toString().replace('+', ' for Minecraft ')}"
+    versionType = 'release'
+    uploadFile = remapJar
+    gameVersions = [project.minecraft_version]
+    loaders = ['fabric']
+    changelog = System.getenv('RELEASE_NOTES') ?: 'See the GitHub release notes for this version.'
+
+    dependencies {
+        required.project 'fabric-api'
     }
 }

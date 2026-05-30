@@ -46,7 +46,8 @@ mod for that workflow.
 - restores the classic debug overlay when pressing `F3`
 - blocks the newer `F3 + F6` debug customization screen
 - keeps the debug chart shortcuts visible in the overlay text
-- omits one local difficulty line on `1.21.10` for stability
+- respects reduced debug info servers and settings
+- restores the local difficulty line when server chunk data is available
 - follows Minecraft's GUI scale by default
 
 ## config

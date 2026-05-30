@@ -5,17 +5,15 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.micr.oldf3.client.OldF3Config;
+import com.micr.oldf3.client.debug.AllocationRateCalculator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.fabricmc.api.EnvType;
@@ -30,6 +28,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.LightType;
+import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.SpawnHelper;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
@@ -108,16 +107,10 @@ public abstract class DebugHudMixin {
     private boolean renderingAndTickChartsVisible;
     @Shadow
     private boolean packetSizeAndPingChartsVisible;
+    @Shadow
+    private ChunkPos pos;
     @Unique
-    private static final List<GarbageCollectorMXBean> GARBAGE_COLLECTORS = ManagementFactory.getGarbageCollectorMXBeans();
-    @Unique
-    private long lastAllocCalcTime = 0L;
-    @Unique
-    private long lastAllocBytes = -1L;
-    @Unique
-    private long lastGcCount = -1L;
-    @Unique
-    private long allocRate = 0L;
+    private final AllocationRateCalculator allocationRateCalculator = new AllocationRateCalculator();
     @Unique
     private static final Map<Heightmap.Type, String> HEIGHTMAP_NAMES = Maps.newEnumMap(Map.of(Heightmap.Type.WORLD_SURFACE_WG, "SW", Heightmap.Type.WORLD_SURFACE, "S", Heightmap.Type.OCEAN_FLOOR_WG, "OW", Heightmap.Type.OCEAN_FLOOR, "O", Heightmap.Type.MOTION_BLOCKING, "M", Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, "ML"));
     @Unique
@@ -147,6 +140,9 @@ public abstract class DebugHudMixin {
 
     @Shadow
     protected abstract World getWorld();
+
+    @Shadow
+    public abstract void resetChunk();
 
     @Unique
     private WorldChunk oldF3_getClientChunk() {
@@ -191,11 +187,25 @@ public abstract class DebugHudMixin {
             ci.cancel();
             return;
         }
+        this.updateChunkPosition();
         List<String> leftText = this.getLeftText();
         List<String> rightText = this.getRightText();
         this.drawDebugText(context, leftText, rightText);
         this.renderCharts(context);
         ci.cancel();
+    }
+
+    @Unique
+    private void updateChunkPosition() {
+        if (this.client.hasReducedDebugInfo() || this.client.getCameraEntity() == null) {
+            return;
+        }
+
+        ChunkPos currentChunkPos = new ChunkPos(this.client.getCameraEntity().getBlockPos());
+        if (!Objects.equals(this.pos, currentChunkPos)) {
+            this.pos = currentChunkPos;
+            this.resetChunk();
+        }
     }
 
     @Unique
@@ -239,6 +249,7 @@ public abstract class DebugHudMixin {
 
     @Unique
     private void renderChartsOnly(DrawContext context) {
+        context.createNewRootLayer();
         int width = this.client.getWindow().getScaledWidth();
         if (this.shouldShowRenderingChart()) {
             this.renderingChart.render(context, width - this.renderingChart.getWidth(width) - 2, 2);
@@ -257,6 +268,7 @@ public abstract class DebugHudMixin {
 
     @Unique
     private void renderCharts(DrawContext context) {
+        context.createNewRootLayer();
         int width = this.client.getWindow().getScaledWidth();
         if (this.shouldShowRenderingChart()) {
             this.renderingChart.render(context, width - this.renderingChart.getWidth(width) - 2, 2);
@@ -408,6 +420,13 @@ public abstract class DebugHudMixin {
             return list;
         }
         BlockPos blockPos = cameraEntity.getBlockPos();
+        if (this.client.hasReducedDebugInfo()) {
+            list.add(String.format(Locale.ROOT, "Chunk-relative: %d %d %d", blockPos.getX() & 0xF, blockPos.getY() & 0xF, blockPos.getZ() & 0xF));
+            list.add("");
+            this.addChartHelpText(list);
+            return list;
+        }
+
         list.add(String.format(Locale.ROOT, "XYZ: %.3f / %.5f / %.3f", cameraEntity.getX(), cameraEntity.getY(), cameraEntity.getZ()));
         list.add(String.format(Locale.ROOT, "Block: %d %d %d [%d %d %d]", blockPos.getX(), blockPos.getY(), blockPos.getZ(), blockPos.getX() & 0xF, blockPos.getY() & 0xF, blockPos.getZ() & 0xF));
         ChunkPos chunkPos = new ChunkPos(blockPos);
@@ -456,6 +475,13 @@ public abstract class DebugHudMixin {
         if (this.client.world != null && this.client.world.isInHeightLimit(blockPos.getY())) {
             RegistryEntry<Biome> biomeEntry = this.client.world.getBiome(blockPos);
             list.add("Biome: " + (String)biomeEntry.getKeyOrValue().map(key -> key.getValue().toString(), value -> "[unregistered " + String.valueOf(value) + "]"));
+            WorldChunk localDifficultyChunk = this.oldF3_getServerChunk();
+            if (localDifficultyChunk != null) {
+                LocalDifficulty localDifficulty = new LocalDifficulty(this.client.world.getDifficulty(), this.client.world.getTimeOfDay(), localDifficultyChunk.getInhabitedTime(), this.client.world.getMoonSize());
+                list.add(String.format(Locale.ROOT, "Local Difficulty: %.2f // %.2f (Day %d)", localDifficulty.getLocalDifficulty(), localDifficulty.getClampedLocalDifficulty(), this.client.world.getTimeOfDay() / 24000L));
+            } else {
+                list.add("Local Difficulty: ??");
+            }
         }
         ServerWorld serverWorld = this.getServerWorld();
         if (serverWorld != null) {
@@ -485,9 +511,7 @@ public abstract class DebugHudMixin {
             list.add("Post: " + String.valueOf(postEffectId));
         }
         list.add("");
-        boolean hasServer = this.client.getServer() != null;
-        list.add("Debug charts: [F3+1] Profiler " + (this.renderingChartVisible ? "visible" : "hidden") + "; [F3+2] " + (hasServer ? "FPS + TPS " : "FPS ") + (this.renderingAndTickChartsVisible ? "visible" : "hidden") + "; [F3+3] " + (!this.client.isInSingleplayer() ? "Bandwidth + Ping" : "Ping") + " " + (this.packetSizeAndPingChartsVisible ? "visible" : "hidden"));
-        list.add("For help: press F3 + Q");
+        this.addChartHelpText(list);
         list.add("");
         HitResult blockHitResult = cameraEntity.raycast(20.0, 0.0f, false);
         if (blockHitResult.getType() == HitResult.Type.BLOCK && this.client.world != null) {
@@ -527,7 +551,7 @@ public abstract class DebugHudMixin {
         long usedMem = totalMem - freeMem;
         list.add(String.format("Java: %s", System.getProperty("java.version")));
         list.add(String.format(Locale.ROOT, "Mem: %2d%% %03d/%03dMB", usedMem * 100L / maxMem, DebugHudMixin.bytesToMegabytes(usedMem), DebugHudMixin.bytesToMegabytes(maxMem)));
-        list.add(String.format(Locale.ROOT, "Allocation rate: %03dMB/s", DebugHudMixin.bytesToMegabytes(this.getAllocationRate(usedMem))));
+        list.add(String.format(Locale.ROOT, "Allocation rate: %03dMB/s", DebugHudMixin.bytesToMegabytes(this.allocationRateCalculator.getAllocationRate(usedMem))));
         list.add(String.format(Locale.ROOT, "Allocated: %2d%% %03dMB", totalMem * 100L / maxMem, DebugHudMixin.bytesToMegabytes(totalMem)));
         list.add("");
         list.add("CPU: " + GLX._getCpuInfo());
@@ -540,30 +564,10 @@ public abstract class DebugHudMixin {
     }
 
     @Unique
-    private long getAllocationRate(long currentAllocatedBytes) {
-        long now = System.currentTimeMillis();
-        if (now - this.lastAllocCalcTime < 500L) {
-            return this.allocRate;
-        }
-        long gcCount = DebugHudMixin.getGcCount();
-        if (this.lastAllocCalcTime != 0L && gcCount == this.lastGcCount) {
-            double factor = (double)TimeUnit.SECONDS.toMillis(1L) / (double)(now - this.lastAllocCalcTime);
-            long delta = currentAllocatedBytes - this.lastAllocBytes;
-            this.allocRate = Math.round((double)delta * factor);
-        }
-        this.lastAllocCalcTime = now;
-        this.lastAllocBytes = currentAllocatedBytes;
-        this.lastGcCount = gcCount;
-        return this.allocRate;
-    }
-
-    @Unique
-    private static long getGcCount() {
-        long count = 0L;
-        for (GarbageCollectorMXBean gc : GARBAGE_COLLECTORS) {
-            count += gc.getCollectionCount();
-        }
-        return count;
+    private void addChartHelpText(List<String> list) {
+        boolean hasServer = this.client.getServer() != null;
+        list.add("Debug charts: [F3+1] Profiler " + (this.renderingChartVisible ? "visible" : "hidden") + "; [F3+2] " + (hasServer ? "FPS + TPS " : "FPS ") + (this.renderingAndTickChartsVisible ? "visible" : "hidden") + "; [F3+3] " + (!this.client.isInSingleplayer() ? "Bandwidth + Ping" : "Ping") + " " + (this.packetSizeAndPingChartsVisible ? "visible" : "hidden"));
+        list.add("For help: press F3 + Q");
     }
 
     @Unique

@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build
+        run: ./gradlew --no-daemon build
+
+      - name: Read release metadata
+        id: meta
+        shell: bash
+        run: |
+          mod_version="$(grep '^mod_version=' gradle.properties | cut -d= -f2)"
+          minecraft_version="$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)"
+          release_version="${mod_version/+/-}"
+          jar_path="build/libs/old-f3-v${release_version}.jar"
+
+          if [[ ! -f "$jar_path" ]]; then
+            echo "Expected release jar not found: $jar_path" >&2
+            exit 1
+          fi
+
+          {
+            echo "mod_version=$mod_version"
+            echo "minecraft_version=$minecraft_version"
+            echo "release_version=$release_version"
+            echo "jar_path=$jar_path"
+            echo "release_title=Old F3 ${mod_version%%+*} for Minecraft $minecraft_version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write release notes
+        shell: bash
+        run: |
+          cat > release-notes.md <<'EOF'
+          Restores the pre-1.21.9 style F3 debug overlay on Fabric.
+
+          Changes:
+          - Keeps the classic debug overlay available through F3.
+          - Supports Minecraft's GUI scale by default.
+          - Supports optional separate F3 text scaling through config/oldf3.properties.
+          EOF
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME:-v${{ steps.meta.outputs.release_version }}}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${{ steps.meta.outputs.jar_path }}" --clobber
+          else
+            gh release create "$tag" "${{ steps.meta.outputs.jar_path }}" \
+              --title "${{ steps.meta.outputs.release_title }}" \
+              --notes-file release-notes.md
+          fi
+
+      - name: Publish Modrinth version
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          RELEASE_NOTES: |
+            Restores the pre-1.21.9 style F3 debug overlay on Fabric.
+
+            Changes:
+            - Keeps the classic debug overlay available through F3.
+            - Supports Minecraft's GUI scale by default.
+            - Supports optional separate F3 text scaling through config/oldf3.properties.
+        run: ./gradlew --no-daemon modrinth
