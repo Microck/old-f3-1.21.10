@@ -13,6 +13,8 @@
 on Fabric. press `F3` as usual to get the classic information layout instead of
 the newer customization surface.
 
+<img width="auto" height="800" alt="screenshot2207_17-19-30-05-2026" src="https://github.com/user-attachments/assets/9157f764-0b96-43d1-8c95-a26da0104b68" />
+
 ## why
 
 the newer debug screen is cleaner, but it is less useful if you are used to the
